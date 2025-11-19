@@ -4,20 +4,21 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class StorageService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  final String bucket = 'images'; // change if needed
-  final String basePath = 'uploads';
+  final String bucket = 'images'; // your bucket name
+  final String basePath = 'uploads'; // folder inside bucket
 
   // -------------------------------
-  // UPLOAD IMAGE
+  // UPLOAD FILE (image/pdf/etc.)
   // -------------------------------
-  Future<String?> uploadImage(File file) async {
+  Future<String?> uploadFile(File file) async {
     try {
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final path = '$basePath/$fileName';
+      final ext = file.path.split('.').last; // detect pdf/jpg/png
+      final path = '$basePath/$fileName.$ext';
 
       await _supabase.storage.from(bucket).upload(path, file);
 
-      return path; // return path so UI can save/display it
+      return path; // return the file path inside bucket
     } catch (e) {
       print("Upload error: $e");
       return null;
@@ -25,11 +26,13 @@ class StorageService {
   }
 
   // -------------------------------
-  // READ / LIST IMAGES
+  // READ / LIST FILES
   // -------------------------------
-  Future<List<FileObject>> listImages() async {
+  Future<List<FileObject>> listFiles() async {
     try {
-      final files = await _supabase.storage.from(bucket).list(path: basePath);
+      final files = await _supabase.storage.from(bucket).list(
+            path: basePath,
+          );
 
       return files;
     } catch (e) {
@@ -39,9 +42,9 @@ class StorageService {
   }
 
   // -------------------------------
-  // DELETE IMAGE
+  // DELETE FILE
   // -------------------------------
-  Future<bool> deleteImage(String filePath) async {
+  Future<bool> deleteFile(String filePath) async {
     try {
       await _supabase.storage.from(bucket).remove([filePath]);
       return true;
@@ -52,12 +55,11 @@ class StorageService {
   }
 
   // -------------------------------
-  // UPDATE IMAGE (replace file)
+  // UPDATE FILE (replace)
   // -------------------------------
-  Future<bool> updateImage(String oldPath, File newFile) async {
+  Future<bool> updateFile(String oldPath, File newFile) async {
     try {
       await _supabase.storage.from(bucket).update(oldPath, newFile);
-
       return true;
     } catch (e) {
       print("Update error: $e");
